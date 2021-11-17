@@ -3,39 +3,48 @@ $(info $(SHELL))
 
 .DELETE_ON_ERROR :
 
-WIN = if windows
-NOWIN = if not windows
-
-ifdef OPT
-CFLAGS = -c -std=c11 -O3
+LFLAGS = 
+ifdef PROF
+CFLAGS = -pthread -std=c11 -O3 -pg -g
+LFLAGS = -pg
 else
-CFLAGS = -c -std=c11 -O0 -g
+ifdef OPT
+CFLAGS = -pthread -std=c11 -O3
+else
+CFLAGS = -pthread -std=c11 -O0 -g
+endif
 endif
 
-objects = run.o sorting.o
+objects = bench.o sorting.o cmdargs.o
 
 default : $(objects)
-	cc -o run $(objects)
+	cc $(LFLAGS) -pthread -o bench $(objects)
 
-run.o : run.c options.h run.h sorts.h 
-	cc $(CFLAGS) run.c
-sorting.o : sorting.c sorting.h
-	cc $(CFLAGS) sorting.c
+bench.o : bench.c bench.h options.h sort_struct.h sort_init.h cmdargs/cmdargs.h
+	cc -c $(CFLAGS) bench.c
+sorting.o : sorting.c sorting.h sort_struct.h
+	cc -c $(CFLAGS) sorting.c
+cmdargs.o : cmdargs/cmdargs.c cmdargs/cmdargs.h
+	cc -c $(CFLAGS) cmdargs/cmdargs.c
 
 opt :
 	$(MAKE) OPT=1
+
+prof :
+	$(MAKE) PROF=1
 
 .PHONY : clean
 clean : 
 	$(info $(OS))
 #	ifeq ($(OS),Windows_NT)
 #	clean ::
-#		$(info "if windows")
 		powershell rm *.exe 
 		powershell rm *.o
 #	else
 #	clean ::
-#		$(info "if not windows")
-#		rm run *.o
+#		rm -f bench *.o
 #	endif
 	
+.PHONY : debclean
+debclean : 
+	rm -f bench *.o
